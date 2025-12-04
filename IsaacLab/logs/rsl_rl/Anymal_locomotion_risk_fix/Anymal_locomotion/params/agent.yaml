@@ -1,0 +1,69 @@
+seed: 42
+device: cuda:0
+num_steps_per_env: 24
+max_iterations: 5000
+empirical_normalization: false
+policy:
+  class_name: Quantile_NN
+  init_noise_std: 1.0
+  noise_std_type: scalar
+  actor_hidden_dims:
+  - 512
+  - 256
+  - 128
+  critic_hidden_dims:
+  - 512
+  - 256
+  - 128
+  activation: elu
+  rnn_type: lstm
+  rnn_hidden_dim: 128
+  rnn_num_layers: 1
+  measure_kwargs:
+    beta: 1.5
+  quantile_count: 400
+  encoder_obs: true
+  navigates: false
+  is_beta: true
+algorithm:
+  class_name: DPPO
+  num_learning_epochs: 5
+  num_mini_batches: 4
+  learning_rate: 0.001
+  schedule: adaptive
+  gamma: 0.99
+  lam: 0.95
+  entropy_coef: 0.01
+  desired_kl: 0.01
+  max_grad_norm: 1.0
+  value_loss_coef: 1.0
+  use_clipped_value_loss: true
+  clip_param: 0.2
+  normalize_advantage_per_mini_batch: false
+  symmetry_cfg: null
+  rnd_cfg: null
+  distributional_loss_type: energy
+clip_actions: null
+save_interval: 50
+experiment_name: Anymal_locomotion_risk_fix
+run_name: ''
+logger: tensorboard
+neptune_project: isaaclab
+wandb_project: isaaclab
+resume: false
+load_run: .*
+load_checkpoint: model_.*.pt
+encoder:
+  class_name: Encoder
+  type: mlp
+  hidden_dims:
+  - 256
+  - 128
+  output_dim: 64
+  gru_hidden_size: {}
+  gru_num_layers: {}
+  conv_channels: {}
+  conv_kernel_sizes: {}
+  conv_strides: {}
+  obs_indices: 49
+  privilaged_obs_indices: 1

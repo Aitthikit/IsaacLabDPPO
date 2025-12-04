@@ -1,0 +1,342 @@
+--- git status ---
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   scripts/tutorials/03_envs/create_quadruped_base_env.py
+	modified:   scripts/tutorials/04_sensors/run_frame_transformer.py
+	modified:   source/isaaclab/isaaclab/terrains/config/GMT_terrain.py
+	modified:   source/isaaclab_rl/isaaclab_rl/rsl_rl/rl_cfg.py
+	modified:   source/isaaclab_tasks/isaaclab_tasks/direct/anymal_c/__init__.py
+	modified:   source/isaaclab_tasks/isaaclab_tasks/direct/anymal_c/agents/rsl_rl_dppo_cfg.py
+	modified:   source/isaaclab_tasks/isaaclab_tasks/direct/anymal_c/anymal_c_env_cfg.py
+	modified:   source/isaaclab_tasks/isaaclab_tasks/direct/anymal_c/anymal_c_risk_env.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	source/isaaclab_tasks/isaaclab_tasks/direct/anymal_c/agents/rsl_rl_distill_cfg.py
+	source/isaaclab_tasks/isaaclab_tasks/direct/anymal_c/anymal_c_distill_env.py
+
+no changes added to commit (use "git add" and/or "git commit -a") 
+
+
+--- git diff ---
+diff --git a/scripts/tutorials/03_envs/create_quadruped_base_env.py b/scripts/tutorials/03_envs/create_quadruped_base_env.py
+index f48963f283..dce2d32775 100644
+--- a/scripts/tutorials/03_envs/create_quadruped_base_env.py
++++ b/scripts/tutorials/03_envs/create_quadruped_base_env.py
+@@ -60,7 +60,7 @@ from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
+ # Pre-defined configs
+ ##
+ from isaaclab.terrains.config.rough import ROUGH_TERRAINS_CFG  # isort: 
+-from isaaclab.terrains.config.GMT_terrain import MULTI_TERRAINS_PLANE_CFG  # isort: skip
++from isaaclab.terrains.config.GMT_terrain import MULTI_TERRAINS_PLANE_CFG  ,NAVIGATE_TERRAINS_CFG # isort: skip
+ from isaaclab_assets.robots.anymal import ANYMAL_C_CFG  # isort: skip
+ 
+ 
+@@ -87,8 +87,8 @@ class MySceneCfg(InteractiveSceneCfg):
+     terrain = TerrainImporterCfg(
+         prim_path="/World/ground",
+         terrain_type="generator",
+-        terrain_generator=MULTI_TERRAINS_PLANE_CFG,
+-        max_init_terrain_level=5,
++        terrain_generator=NAVIGATE_TERRAINS_CFG,
++        max_init_terrain_level=9,
+         collision_group=-1,
+         physics_material=sim_utils.RigidBodyMaterialCfg(
+             friction_combine_mode="multiply",
+@@ -96,6 +96,10 @@ class MySceneCfg(InteractiveSceneCfg):
+             static_friction=1.0,
+             dynamic_friction=1.0,
+         ),
++        visual_material=sim_utils.MdlFileCfg(
++            mdl_path="{NVIDIA_NUCLEUS_DIR}/Materials/Base/Architecture/Shingles_01.mdl",
++            project_uvw=True,
++        ),
+         debug_vis=False,
+     )
+ 
+diff --git a/scripts/tutorials/04_sensors/run_frame_transformer.py b/scripts/tutorials/04_sensors/run_frame_transformer.py
+index 1cf398d714..1675052fd4 100644
+--- a/scripts/tutorials/04_sensors/run_frame_transformer.py
++++ b/scripts/tutorials/04_sensors/run_frame_transformer.py
+@@ -158,6 +158,7 @@ def run_simulator(sim: sim_utils.SimulationContext, scene_entities: dict):
+             # plain color for lines
+             lines_colors = [[1.0, 1.0, 0.0, 1.0]] * source_pos.shape[0]
+             line_thicknesses = [5.0] * source_pos.shape[0]
++            print(source_pos.tolist(), target_pos.tolist(), lines_colors, line_thicknesses)
+             draw_interface.draw_lines(source_pos.tolist(), target_pos.tolist(), lines_colors, line_thicknesses)
+ 
+ 
+diff --git a/source/isaaclab/isaaclab/terrains/config/GMT_terrain.py b/source/isaaclab/isaaclab/terrains/config/GMT_terrain.py
+index 7a6f9dd99a..6523ac28ff 100644
+--- a/source/isaaclab/isaaclab/terrains/config/GMT_terrain.py
++++ b/source/isaaclab/isaaclab/terrains/config/GMT_terrain.py
+@@ -64,14 +64,15 @@ MULTI_TERRAINS_PLANE_CFG = TerrainGeneratorCfg(
+ NAVIGATE_TERRAINS_CFG = TerrainGeneratorCfg(
+     size=(8.0, 8.0),
+     border_width=20.0,
+-    num_rows=10,
+-    num_cols=20,
++    num_rows=1,
++    num_cols=5,
+     horizontal_scale=0.1,
+     vertical_scale=0.005,
+     slope_threshold=0.75,
+     use_cache=False,
+-    curriculum = False,
+-    # difficulty_range = (0.5,1.0),
++    curriculum = True,
++    color_scheme = "height",
++    difficulty_range = (1.0,1.0),
+     sub_terrains={
+         "plane": terrain_gen.MeshPlaneTerrainCfg(
+             proportion=0.1,
+diff --git a/source/isaaclab_rl/isaaclab_rl/rsl_rl/rl_cfg.py b/source/isaaclab_rl/isaaclab_rl/rsl_rl/rl_cfg.py
+index 29654d66d7..4a6af00500 100644
+--- a/source/isaaclab_rl/isaaclab_rl/rsl_rl/rl_cfg.py
++++ b/source/isaaclab_rl/isaaclab_rl/rsl_rl/rl_cfg.py
+@@ -240,6 +240,12 @@ class RslRlEncoderDistillationCfg:
+     output_dim: int = MISSING
+     """The output dimension of the encoder network."""
+ 
++    student_output_dim: int = MISSING
++    """The output dimension of the encoder network."""
++
++    teacher_output_dim: int = MISSING
++    """The output dimension of the encoder network."""
++
+     student_gru_hidden_size: int = MISSING
+     """The hidden size of the GRU network. Only used if type is "gru"."""
+ 
+diff --git a/source/isaaclab_tasks/isaaclab_tasks/direct/anymal_c/__init__.py b/source/isaaclab_tasks/isaaclab_tasks/direct/anymal_c/__init__.py
+index f2d200d74a..b0ba0e693f 100644
+--- a/source/isaaclab_tasks/isaaclab_tasks/direct/anymal_c/__init__.py
++++ b/source/isaaclab_tasks/isaaclab_tasks/direct/anymal_c/__init__.py
+@@ -50,3 +50,29 @@ gym.register(
+         "skrl_cfg_entry_point": f"{agents.__name__}:skrl_rough_ppo_cfg.yaml",
+     },
+ )
++
++gym.register(
++    id="Isaac-Velocity-Rough-DPPO-Anymal-C-Direct-v0",
++    entry_point=f"{__name__}.anymal_c_risk_env:AnymalCEnv",
++    disable_env_checker=True,
++    kwargs={
++        "env_cfg_entry_point": f"{__name__}.anymal_c_env_cfg:AnymalCRoughEnvCfg",
++        "rl_games_cfg_entry_point": f"{agents.__name__}:rl_games_rough_ppo_cfg.yaml",
++        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_dppo_cfg:AnymalCRoughDPPORunnerCfg",
++        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_rough_ppo_cfg.yaml",
++    },
++)
++
++
++gym.register(
++    id="Isaac-Velocity-Distill-Anymal-C-Direct-v0",
++    entry_point=f"{__name__}.anymal_c_distill_env:AnymalCDistillEnv",
++    disable_env_checker=True,
++    kwargs={
++        "env_cfg_entry_point": f"{__name__}.anymal_c_env_cfg:AnymalCDistillEnvCfg",
++        "rl_games_cfg_entry_point": f"{agents.__name__}:rl_games_rough_ppo_cfg.yaml",
++        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_dppo_cfg:AnymalCRoughDPPORunnerCfg",
++        "skrl_cfg_entry_point": f"{agents.__name__}:skrl_rough_ppo_cfg.yaml",
++    },
++)
++
+diff --git a/source/isaaclab_tasks/isaaclab_tasks/direct/anymal_c/agents/rsl_rl_dppo_cfg.py b/source/isaaclab_tasks/isaaclab_tasks/direct/anymal_c/agents/rsl_rl_dppo_cfg.py
+index 10dad3a603..7e940193c3 100644
+--- a/source/isaaclab_tasks/isaaclab_tasks/direct/anymal_c/agents/rsl_rl_dppo_cfg.py
++++ b/source/isaaclab_tasks/isaaclab_tasks/direct/anymal_c/agents/rsl_rl_dppo_cfg.py
+@@ -54,6 +54,56 @@ class AnymalCFlatDPPORunnerCfg(RslRlOnPolicyRunnerCfg):
+         max_grad_norm=1.0,
+         distributional_loss_type="energy",
+     )
++
++@configclass
++class AnymalCRoughDPPORunnerCfg(RslRlOnPolicyRunnerCfg):
++    num_steps_per_env = 24
++    max_iterations = 5000
++    save_interval = 50
++    experiment_name = "Anymal_locomotion_risk_fix"
++    empirical_normalization = False
++    policy = RslRlPpoQuantileCfg(
++        init_noise_std=1.0,
++        actor_hidden_dims=[512, 256, 128],
++        critic_hidden_dims=[512, 256, 128],
++        # actor_hidden_dims=[128, 128, 128],
++        # critic_hidden_dims=[128, 128, 128],
++        activation="elu",
++        rnn_hidden_dim=128,
++        rnn_type="lstm",
++        rnn_num_layers=1,
++        measure_kwargs={"beta":1.5},
++        quantile_count = 400,
++        encoder_obs = True,
++        is_beta = True,
++    )
++
++    encoder = RslRlEncoderCfg(
++        type = "mlp",
++        hidden_dims=[256, 128],
++        output_dim=64,
++        obs_indices = 49,
++        # gru_hidden_size = 256,
++        # gru_num_layers = 2,
++        privilaged_obs_indices = 1,
++    )
++
++    algorithm = RslRlDppoAlgorithmCfg(
++        class_name="DPPO",
++        value_loss_coef=1.0,
++        use_clipped_value_loss=True,
++        clip_param=0.2,
++        entropy_coef=0.01,
++        num_learning_epochs=5,
++        num_mini_batches=4,
++        learning_rate=1.0e-3,
++        schedule="adaptive",
++        gamma=0.99,
++        lam=0.95,
++        desired_kl=0.01,
++        max_grad_norm=1.0,
++        distributional_loss_type="energy",
++    )
+   
+ 
+ @configclass
+diff --git a/source/isaaclab_tasks/isaaclab_tasks/direct/anymal_c/anymal_c_env_cfg.py b/source/isaaclab_tasks/isaaclab_tasks/direct/anymal_c/anymal_c_env_cfg.py
+index d93ce2841c..a0296c4fd5 100644
+--- a/source/isaaclab_tasks/isaaclab_tasks/direct/anymal_c/anymal_c_env_cfg.py
++++ b/source/isaaclab_tasks/isaaclab_tasks/direct/anymal_c/anymal_c_env_cfg.py
+@@ -10,7 +10,7 @@ from isaaclab.envs import DirectRLEnvCfg
+ from isaaclab.managers import EventTermCfg as EventTerm
+ from isaaclab.managers import SceneEntityCfg
+ from isaaclab.scene import InteractiveSceneCfg
+-from isaaclab.sensors import ContactSensorCfg, RayCasterCfg, patterns
++from isaaclab.sensors import ContactSensorCfg, RayCasterCfg, patterns ,RayCasterCameraCfg
+ from isaaclab.sim import SimulationCfg
+ from isaaclab.terrains import TerrainImporterCfg
+ from isaaclab.utils import configclass
+@@ -146,3 +146,92 @@ class AnymalCRoughEnvCfg(AnymalCFlatEnvCfg):
+ 
+     # reward scales (override from flat config)
+     flat_orientation_reward_scale = 0.0
++
++
++@configclass
++class AnymalCDistillEnvCfg(DirectRLEnvCfg):
++    # env
++    episode_length_s = 20.0
++    decimation = 4
++    action_scale = 0.5
++    action_space = 12
++    observation_space = 48
++    state_space = 0
++
++    # simulation
++    sim: SimulationCfg = SimulationCfg(
++        dt=1 / 200,
++        render_interval=decimation,
++        physics_material=sim_utils.RigidBodyMaterialCfg(
++            friction_combine_mode="multiply",
++            restitution_combine_mode="multiply",
++            static_friction=1.0,
++            dynamic_friction=1.0,
++            restitution=0.0,
++        ),
++    )
++    terrain = TerrainImporterCfg(
++        prim_path="/World/ground",
++        terrain_type="plane",
++        collision_group=-1,
++        physics_material=sim_utils.RigidBodyMaterialCfg(
++            friction_combine_mode="multiply",
++            restitution_combine_mode="multiply",
++            static_friction=1.0,
++            dynamic_friction=1.0,
++            restitution=0.0,
++        ),
++        debug_vis=False,
++    )
++
++    # scene
++    scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=4096, env_spacing=4.0, replicate_physics=True)
++
++    # events
++    events: EventCfg = EventCfg()
++
++    # robot
++    robot: ArticulationCfg = ANYMAL_C_CFG.replace(prim_path="/World/envs/env_.*/Robot")
++    contact_sensor: ContactSensorCfg = ContactSensorCfg(
++        prim_path="/World/envs/env_.*/Robot/.*", history_length=3, update_period=0.005, track_air_time=True
++    )
++
++    raycamera_cfg = RayCasterCameraCfg(
++        prim_path="/World/envs/env_.*/Robot/body",
++        mesh_prim_paths=["/World/ground"],
++        update_period=0.02,
++        offset=RayCasterCameraCfg.OffsetCfg(pos=(0.1, 0.0, -0.05),rot=(0.354,-0.612,0.612,-0.354)),
++        # offset=RayCasterCameraCfg.OffsetCfg(pos=(0.0, 0.0, 1.30),rot=(0.0,0.0,1.0,0.0)),
++        data_types=["distance_to_image_plane", "normals", "distance_to_camera"],
++        debug_vis=False,
++        depth_clipping_behavior= "zero",
++        pattern_cfg=patterns.PinholeCameraPatternCfg(
++            focal_length=3.5,
++            horizontal_aperture=4.8,
++            height=45,
++            width=60,
++        ),
++    )
++
++     # we add a height scanner for perceptive locomotion
++    height_scanner = RayCasterCfg(
++        prim_path="/World/envs/env_.*/Robot/base",
++        offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 20.0)),
++        attach_yaw_only=True,
++        pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=[1.6, 1.0]),
++        debug_vis=False,
++        mesh_prim_paths=["/World/ground"],
++    )
++
++
++    # reward scales
++    lin_vel_reward_scale = 1.0
++    yaw_rate_reward_scale = 0.5
++    z_vel_reward_scale = -2.0
++    ang_vel_reward_scale = -0.05
++    joint_torque_reward_scale = -2.5e-5
++    joint_accel_reward_scale = -2.5e-7
++    action_rate_reward_scale = -0.01
++    feet_air_time_reward_scale = 0.0 #0.5
++    undesired_contact_reward_scale = -1.0
++    flat_orientation_reward_scale = -5.0
+diff --git a/source/isaaclab_tasks/isaaclab_tasks/direct/anymal_c/anymal_c_risk_env.py b/source/isaaclab_tasks/isaaclab_tasks/direct/anymal_c/anymal_c_risk_env.py
+index 0c0a6f6716..74574ba999 100644
+--- a/source/isaaclab_tasks/isaaclab_tasks/direct/anymal_c/anymal_c_risk_env.py
++++ b/source/isaaclab_tasks/isaaclab_tasks/direct/anymal_c/anymal_c_risk_env.py
+@@ -96,9 +96,10 @@ class AnymalCEnv(DirectRLEnv):
+                     self._robot.data.projected_gravity_b,
+                     self._robot.data.joint_pos - self._robot.data.default_joint_pos,
+                     self._robot.data.joint_vel,
+-                    height_data,
++                    # height_data,
+                     self._actions,
+                     self._commands,
++                    height_data,
+                 )
+                 if tensor is not None
+             ],
+@@ -113,9 +114,10 @@ class AnymalCEnv(DirectRLEnv):
+                     self._robot.data.projected_gravity_b,
+                     self._robot.data.joint_pos - self._robot.data.default_joint_pos,
+                     self._robot.data.joint_vel,
+-                    height_data,
++                    # height_data,
+                     self._actions,
+                     self._commands[:,:3],
++                    height_data,
+                 )
+                 if tensor is not None
+             ],
