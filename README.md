@@ -11,10 +11,16 @@ This guide will walk you through the installation process of Isaac Lab version 4
 
 ## Installation Steps
 
-### 1. Create and Activate Virtual Environment
+### 1. Virtual Environment Setup
 
+#### 1.1 Create Virtual Environment
 ```bash
 conda create -n env_isaaclab python=3.10
+```
+
+#### 1.2 Activate Virtual Environment
+Activate when open new terminal
+```bash
 conda activate env_isaaclab
 ```
 
@@ -68,7 +74,8 @@ cd IsaacLab #go to IsaacLab Directory
 ### 6. Rsl_rl Install 
 
 Clone or copy this project/repository separately from the Isaac Lab installation (i.e. outside the `IsaacLab` directory):
- **Note:** Install Rsl_rl after finished IsaacLab install. 
+
+> **Note:** Install Rsl_rl after finished IsaacLab install. 
  
 1. Clone the Rsl_rl repository:
 ```bash
@@ -99,6 +106,7 @@ pip install --upgrade --pre torch torchvision --index-url https://download.pytor
 ## Verification
 
 To verify your installation:
+Go to IsaacLab directory first and run scripts
 
 1. Run the simulator:
 ```bash
@@ -112,7 +120,7 @@ isaacsim
 
 3. Verify environment :
 ```bash
-./isaaclab.sh -p scripts/tutorials/00_sim/create_empty.py
+./isaaclab.sh -p scripts/tutorials/03_envs/create_quadruped_base.py
 ```
 
 You should see a simulator window with a black viewport. If this appears, your installation was successful!
