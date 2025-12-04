@@ -27,3 +27,4 @@ from .terrain_importer import TerrainImporter
 from .terrain_importer_cfg import TerrainImporterCfg
 from .trimesh import *  # noqa: F401, F403
 from .utils import color_meshes_by_height, create_prim_from_mesh
+from .sub_terrain_cfg import *
