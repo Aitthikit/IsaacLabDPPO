@@ -70,6 +70,8 @@ sudo apt install cmake build-essential
 cd IsaacLab #go to IsaacLab Directory
 ./isaaclab.sh --install  # Installs all learning frameworks
 ```
+> **Note:** You can ignore Isaac Lab template settings file not found error
+
 
 ### 6. Rsl_rl Install 
 
@@ -128,6 +130,8 @@ You should see a simulator window with a black viewport. If this appears, your i
 ## Training Examples 
 
 Once installed, you can try these example training commands:
+
+This might take few minutes to start up.
 
 Train an anymal c to walk with DPPO algorithm:
 ```bash
