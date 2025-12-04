@@ -119,13 +119,16 @@ isaacsim
 ```bash
 ./isaaclab.sh -p scripts/tutorials/00_sim/create_empty.py
 ```
+You should see a simulator window with a black viewport.
 
 3. Verify environment :
 ```bash
 ./isaaclab.sh -p scripts/tutorials/03_envs/create_quadruped_base.py
 ```
 
-You should see a simulator window with a black viewport. If this appears, your installation was successful!
+You should see a simulator window with Anymal robot. If this appears, your installation was successful!
+
+
 
 ## Training Examples 
 
