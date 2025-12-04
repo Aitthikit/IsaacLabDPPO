@@ -50,7 +50,8 @@ cd workspace_name
 
 1. Clone the Isaac Lab repository:
 ```bash
-git clone https://github.com/Aitthikit/IsaacLab.git
+git clone https://github.com/Aitthikit/IsaacLabDPPO.git
+cd IsaacLabDPPO
 ```
 
 2. Install dependencies (Ubuntu):
@@ -60,17 +61,18 @@ sudo apt install cmake build-essential
 
 3. Install Isaac Lab extensions:
 ```bash
-cd IsaacLab
+cd IsaacLab #go to IsaacLab Directory
 ./isaaclab.sh --install  # Installs all learning frameworks
 ```
 
 ### 6. Rsl_rl Install 
 
 Clone or copy this project/repository separately from the Isaac Lab installation (i.e. outside the `IsaacLab` directory):
-
+ **Note:** Install Rsl_rl after finished IsaacLab install. 
+ 
 1. Clone the Rsl_rl repository:
 ```bash
-cd .. # back to workspace
+cd ../.. # back to workspace
 git clone https://github.com/Aitthikit/rsl_rl.git -b my-fix
 ```
 
